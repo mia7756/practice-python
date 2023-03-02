@@ -5,6 +5,7 @@ PALACES = [
     "命宮", "父母", "福德", "田宅", "官祿", "交友",
     "遷移", "疾厄", "財帛", "子女", "夫妻", "兄弟",
 ]
+ROUNDS = ["金四局", "水二局", "火六局", "土五局", "木三局"]
 
 
 def birth_palace(month: str, hour: str) -> dict:
@@ -65,7 +66,46 @@ def birth_heavenly(year: str) -> dict:
     # 戊癸 餘 4 ....  + 6 = 甲(0) => 餘數 + (餘數 + 2) = 4 + 4 + 2 = 10
     # => (餘數 * 2 + 2) % 10
     start_index = ((HEAVENLYS.index(year) % 5) * 2 + 2) % 10
-    result = {"子": HEAVENLYS[start_index], "丑": HEAVENLYS[start_index+1]}
+    result = {"子": HEAVENLYS[start_index], "丑": HEAVENLYS[start_index + 1]}
     for i in range(10):
         result[EARTHLYS[2 + i]] = HEAVENLYS[(start_index + i) % 10]
     return result
+
+
+def birth_round(selfpalace_heavenaly: str, selfpalace_earthly: str) -> str:
+    """五行局
+    Ex: 出生 2023-03-01 丑時(農曆癸卯年二月初十 丑時)
+    birth_palace("卯", "丑") 得知 "命宮" 位於"寅"
+    birth_heavenly("癸") 得知 "甲" 位於"寅"
+    input: "甲", "寅"
+    output: '水二局'
+
+    Args:
+        selfpalace_heavenaly (str): 命宮位置的天干
+        selfpalace_earthly (str): 命宮位置的地支
+
+    Returns:
+        str: 五行局的字串
+    """
+    # 子丑 商 0 -> 除以 3 餘 0
+    # 寅卯 商 1 -> 除以 3 餘 1
+    # 辰巳 商 2 -> 除以 3 餘 2
+    # 午未 商 3 -> 除以 3 餘 0
+    # 申酉 商 4 -> 除以 3 餘 1
+    # 戌亥 商 5 -> 除以 3 餘 2
+    # ===========================
+    # 甲乙 商 0
+    # 丙丁 商 1
+    # 戊己 商 2
+    # 庚辛 商 3
+    # 壬癸 商 4
+    # ========================
+    # 五行的位置 index 為 0 ~ 4, 所以取餘數
+    # (步驟一的餘 + 步驟二的商) % 5
+    return ROUNDS[
+        (
+            (EARTHLYS.index(selfpalace_earthly) // 2 % 3)
+            + (HEAVENLYS.index(selfpalace_heavenaly) // 2)
+        )
+        % 5
+    ]
