@@ -1,3 +1,5 @@
+import math
+
 HEAVENLYS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"]
 EARTHLYS = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
 ANIMALS = ["鼠", "牛", "虎", "兔", "龍", "蛇", "馬", "羊", "猴", "雞", "狗", "豬"]
@@ -109,3 +111,60 @@ def birth_round(selfpalace_heavenaly: str, selfpalace_earthly: str) -> str:
         )
         % 5
     ]
+
+
+def star_emperor(day: int, round: str) -> str:
+    """紫微星位置
+    Ex: 出生 2023-03-01 丑時(農曆癸卯年二月初十 丑時)
+    input: 10, "水二局"
+    output: '午'
+
+    Args:
+        day (int): 出生日
+        round (str): 五行局
+
+    Returns:
+        str: 紫微星位置(地支)
+    """
+    # day 農曆最大30, 遇到水二局, 商為15, index 為 0 ~ 11, 所以取餘數
+    # 由寅開始(index = 2)
+    cycle = {"金四局": 4, "水二局": 2, "火六局": 6, "土五局": 5, "木三局": 3}[round]
+    cell = (2 + math.ceil(day / cycle) - 1) % 12
+    lack = cycle - (day % cycle) if day % cycle else 0
+    return EARTHLYS[cell + lack * (-1) ** lack]
+
+
+def stars_main(day: int, round: str) -> dict:
+    """十四顆主星
+    Ex: 出生 2023-03-01 丑時(農曆癸卯年二月初十 丑時)
+    input: 10, "水二局"
+        star_emperor(10, "水二局") 得知 "紫微" 位於 "午"
+    output: {'子': ['貪狼'], '丑': ['天同', '巨門'], '寅': ['武曲', '天相'],...}
+
+
+    Args:
+        day (int): 出生日
+        round (str): 五行局
+
+    Returns:
+        dict: 子丑寅卯...對應的星曜
+    """
+    # star_emperor(10, "水二局") 得知 "紫微" 位於 "午"
+    # 天府 位於 紫微的對角
+    rule_1 = [
+        "紫微", None, None, None, "廉貞", None,
+        None, "天同", "武曲", "太陽", None, "天機",
+    ]
+    rule_2 = [
+        "天府", "太陰", "貪狼", "巨門", "天相", "天梁",
+        "七殺", None, None, None, "破軍", None,
+    ]
+    rule_1_start = EARTHLYS.index(star_emperor(day, round))
+    rule_2_start = ((rule_1_start - 2) * -1 + 12 + 2) % 12
+    result = dict()
+    for i, earthly in enumerate(EARTHLYS):
+        result[earthly] = []
+        for rule, start in [(rule_1, rule_1_start), (rule_2, rule_2_start)]:
+            if star := rule[(i - start + 12) % 12]:
+                result[earthly].append(star)
+    return result
