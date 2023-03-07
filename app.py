@@ -122,6 +122,47 @@ class BirthChart:
 
         self.b_y_h = self.b_y_he[0]
         self.b_y_e = self.b_y_he[1]
+        # 天干
+        self.b_heavenly = self.birth_heavenly(self.b_y_h)
+        # 十二宮
+        self.b_palace = self.birth_palace(self.b_m, self.b_h)
+        for e, palace in self.b_palace.items():
+            if palace == "命宮":
+                self.b_selfplace_h = self.b_heavenly[e]
+                self.b_selfplace_e = e
+                break
+        # 五局數
+        self.b_round = self.birth_round(self.b_selfplace_h, self.b_selfplace_e)
+        # 身宮
+        self.b_bodypalace = self.birth_bodypalace(self.b_m, self.b_h)
+        # 主星
+        self.b_stars_main = self.stars_main(self.b_d, self.b_round)
+        # 八吉星
+        self.b_stars_lucky = self.stars_lucky(
+            self.b_y_h, self.b_y_e, self.b_m, self.b_h
+        )
+        # 六煞星
+        self.b_stars_unlucky = self.stars_unluckly(
+            self.b_y_h, self.b_y_e, self.b_h
+        )
+        # 四化星
+        self.b_stars_LuQuanKeJi = self.stars_LuQuanKeJi(self.b_y_h)
+        # 排盤
+        self.chart = {earthly: {} for earthly in EARTHLYS}
+        for earthly in EARTHLYS:
+            self.chart[earthly] = {}
+            self.chart[earthly]["天干"] = self.b_heavenly[earthly]
+            self.chart[earthly]["地支"] = earthly
+            self.chart[earthly]["十二宮"] = self.b_palace[earthly]
+            self.chart[earthly]["主星"] = self.b_stars_main[earthly]
+            self.chart[earthly]["八吉星"] = self.b_stars_lucky[earthly]
+            self.chart[earthly]["六煞星"] = self.b_stars_unlucky[earthly]
+            for star, LuQuanKeJi in self.b_stars_LuQuanKeJi.items():
+                if star in self.chart[earthly]["主星"]:
+                    star_index = self.chart[earthly]["主星"].index(star)
+                    self.chart[
+                        earthly
+                    ]["主星"][star_index] = f"{star}[{LuQuanKeJi}]"
 
     def birth_palace(self, month: str, hour: str) -> dict:
         """12宮位置
@@ -161,7 +202,7 @@ class BirthChart:
             for earthly in EARTHLYS
         }
 
-    def birth_heavenly(self, year: str) -> dict:
+    def birth_heavenly(self, year_heavenaly: str) -> dict:
         """天干位置
         Ex: 出生 2023-03-01 丑時(農曆癸卯年二月初十 丑時)
         input: "癸"
@@ -179,7 +220,9 @@ class BirthChart:
         # 丁壬 餘 3 ....  + 5 = 壬(8) => 餘數 + (餘數 + 2) = 3 + 3 + 2 = 8
         # 戊癸 餘 4 ....  + 6 = 甲(0) => 餘數 + (餘數 + 2) = 4 + 4 + 2 = 10
         # => (餘數 * 2 + 2) % 10
-        start_index = ((HEAVENLYS.index(year) % 5) * 2 + 2) % 10
+        start_index = (
+            (HEAVENLYS.index(year_heavenaly) % 5) * 2 + 2
+        ) % 10
         result = {
             "子": HEAVENLYS[start_index],
             "丑": HEAVENLYS[start_index + 1],
@@ -380,10 +423,14 @@ class BirthChart:
         # 火星、鈴星 input: birth_year_earthly, birth_hour
         rule = [(2, 10), (3, 10), (1, 3), (9, 10)]
         result[
-            EARTHLYS[rule[birth_year_earthly_index % 4][0] + birth_hour_index]
+            EARTHLYS[
+                (rule[birth_year_earthly_index % 4][0] + birth_hour_index) % 12
+            ]
         ].append("火星")
         result[
-            EARTHLYS[rule[birth_year_earthly_index % 4][1] + birth_hour_index]
+            EARTHLYS[
+                (rule[birth_year_earthly_index % 4][1] + birth_hour_index) % 12
+            ]
         ].append("鈴星")
         # 地劫、地空 input: birth_hour
         # 地劫: 從 亥宮位開始順時針 11 + (子時=0)
@@ -410,12 +457,12 @@ class BirthChart:
             ("天機", "天梁", "紫微", "太陰"),
             ("天同", "天機", "文昌", "廉貞"),
             ("太陰", "天同", "天機", "巨門"),
-            ("貪狼", "太陰", "太陽", "天機"),
+            ("貪狼", "太陰", "右弼", "天機"),
             ("武曲", "貪狼", "天梁", "文曲"),
-            ("太陽", "武曲", "天府", "天同"),
+            ("太陽", "武曲", "太陰", "天同"),
             ("巨門", "太陽", "文曲", "文昌"),
-            ("天梁", "紫微", "天府", "武曲"),
+            ("天梁", "紫微", "左輔", "武曲"),
             ("破軍", "巨門", "太陰", "貪狼"),
         ]
         LuQuanKeJi = rule[birth_year_heavenaly_index]
-        return dict(zip(("祿", "權", "科", "忌"), LuQuanKeJi))
+        return dict(zip(LuQuanKeJi, ("祿", "權", "科", "忌")))
